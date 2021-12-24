@@ -30,7 +30,7 @@ Suppose that you have some new not well understood device that you ripped the dt
 
 ./multidtc newdevice/rk3566-newdevice.dtb
 
-./dts2tsv newdevice/rk3566-newdevice.dts dtbdump/rk356*.dtb-decompiled.dts out.tsv
+./dts2tsv newdevice/rk3566-newdevice.dtb-decompiled.dts dtbdump/rk356*.dtb-decompiled.dts out.tsv
 
 Don't forget the out.tsv because otherwise dts2tsv will overwrite the last dts file with the output (but it will ask you if you are sure).
 
