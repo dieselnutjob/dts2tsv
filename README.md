@@ -9,7 +9,6 @@ fpc dts2tsv.pas
 
 Multidtc is simply a wrapper for dtc which you need to install yourself.
 dtc will only decompile one dtb file at a time. Multidtc will decompile multiple files in one go.
-Yes YOU can probably do it with shell script.  I prefer pascal.
 
 Assuming that you have some arm linux kernel already compiled (using something like 
 
