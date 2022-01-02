@@ -68,7 +68,7 @@ Procedure AddNodeTophandleArray(AName, Aphandle: shortstring);
 var
   L: longword;
 begin
-  if debug then writeln('AddNodeTophandleArray:'+AName+':'+Aphandle);
+  //if debug then writeln('AddNodeTophandleArray:'+AName+':'+Aphandle);
   if length(phandleArray)=0 then
   begin
     setlength(phandleArray,1);
@@ -127,7 +127,7 @@ begin
     on E:Exception do
       writeln('File '+InputFile+' could not be read because: ', E.Message);
   end;
-  if debug then writeln(InputFile+':'+Inttostr(AMS.Size));
+  //if debug then writeln(InputFile+':'+Inttostr(AMS.Size));
   if AMS.Size>0 then
   begin;
     Depth:=1;
@@ -144,6 +144,7 @@ begin
     while AMS.Position < AMS.Size do
     begin
       A:=AMS.ReadByte; //also increments AMS.Position
+      //if debug then writeln('AMS.Char='+chr(A));
       case AMode of
         Name:  begin
           case A of
@@ -177,15 +178,18 @@ begin
                     end;
             // }  end of node, start a new one
             125   : begin
+                      //if debug then writeln('#181 depth='+inttostr(depth));
                       AName[depth-1]:='';
                       dec(depth);
                       setlength(AName,depth);
-                      if DataStarted then
+                      if DataStarted AND (depth>0) then
                       begin
                         AName[depth-1]:='';
                         phandle:='';
                         ValueIsphandle:=false;
                       end;
+                      //if debug then writeln('#191');
+
                     end;
             // /
             47    : begin
@@ -198,7 +202,8 @@ begin
                             //only happens here if there is a node without a value
                       //check if there is anything here at all
                       TempStr:='';
-                      for B:=0 to length(AName)-1 do TempStr:=TempStr+AName[B];
+                      if length(AName)>0 then
+                        for B:=0 to length(AName)-1 do TempStr:=TempStr+AName[B];
                       if length(Tempstr)>0 then
                       begin
                         TempStr:='';
@@ -297,6 +302,7 @@ begin
                           begin
                             TempStr:=TempStr+UnDepthDelimiter;
                           end;
+                          //if debug then writeln('#301:'+Tempstr);
                           AddNodeTophandleArray(tempstr,phandle);
                         end;
                       end;
@@ -352,6 +358,7 @@ begin
   end;
 
   AMS.Free;
+  //if debug then writeln('ended DTSFile2Array');
 end;
 
 Function OutPutFileOkay(aFile:ansistring):boolean;
@@ -479,6 +486,7 @@ var
   A,B: word;
   TempStr: ansistring;
 begin
+  //if debug then writeln(aValue+':'+bvalue);
   Result:='';
   setlength(valuelist,0);
   //setlength(valueend,0);
@@ -523,7 +531,7 @@ begin
               begin
                 valuelist[A].replace:=true;
                 valuelist[A].newtext:=pHandleArray[B].name;
-                if debug then writeln('phandle '+Tempstr+' can be replaced with '+valuelist[A].newtext);
+                //if debug then writeln('phandle '+Tempstr+' can be replaced with '+valuelist[A].newtext);
               end;
             end;
           end;
@@ -554,6 +562,7 @@ Procedure ProcessDTBSFile(aFile: ansistring; FileNumber: LongInt);
 var
   ADTSArray: PDTSArray;
   A,B,C: longword;
+  PValueMatchFound: boolean;
 begin
   setlength(DTSArray,0,0);
   //new DTSArray starts here, per input file
@@ -576,6 +585,7 @@ begin
         //writeln('length(DTSArray[0]):'+inttostr(length(DTSArray[0]))+' length(PValuesArray[0])'+inttostr(length(PValuesArray[0])));
         for A:=0 to length(DTSArray[0])-1 do  //row 0 is file name
         begin
+          PValueMatchFound:=false;
           if A=0 then
           begin
             OutputArray[FileNumber+1][0]:=aFile;
@@ -586,13 +596,17 @@ begin
             begin
               for B:=0 to length(PValuesArray[0])-1 do
               begin
-                if comparestr(DTSArray[0][A],PValuesArray[0][B])=0 then //writeln(DTSArray[0][A]+' matches '+PValuesArray[0][B]);
+                if NOT PValueMatchFound then
                 begin
-                  if length(DTSArray[1][A])>0 then
+                  if comparestr(DTSArray[0][A],PValuesArray[0][B])=0 then //writeln(DTSArray[0][A]+' matches '+PValuesArray[0][B]);
                   begin
-                    if debug then writeln(DTSArray[0][A]+'>'+DTSArray[1][A]+'>'+PValuesArray[1][B]);
-                    if DTSArray[1][A][1]='<' then DTSArray[1][A]:=Value2pHandle(DTSArray[1][A],PValuesArray[1][B]);
-                    //writeln(DTSArray[1][A]);
+                    PValueMatchFound:=true;
+                    if length(DTSArray[1][A])>0 then
+                    begin
+                      //if debug then writeln(DTSArray[0][A]+' : '+DTSArray[1][A]+' : '+PValuesArray[1][B]);
+                      if DTSArray[1][A][1]='<' then DTSArray[1][A]:=Value2pHandle(DTSArray[1][A],PValuesArray[1][B]);
+                      //writeln(DTSArray[1][A]);
+                    end;
                   end;
                 end;
               end;
