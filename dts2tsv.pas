@@ -192,6 +192,52 @@ begin
                       OldMode:=Name;
                       AMode:=Slash;
                     end;
+            59    : begin   // ; char means name and value done
+                            //now we have a complete name and value
+                            //add to output array
+                            //only happens here if there is a node without a value
+                      //check if there is anything here at all
+                      TempStr:='';
+                      for B:=0 to length(AName)-1 do TempStr:=TempStr+AName[B];
+                      if length(Tempstr)>0 then
+                      begin
+                        TempStr:='';
+                        for B:=0 to length(AName)-1 do
+                        begin
+                          if B<>0 then TempStr:=TempStr+DepthDelimiter;
+                          TempStr:=TempStr+DeLabel(AName[B]);
+                        end;
+                        for B:=1 to length(AName)-1 do
+                        begin
+                          TempStr:=TempStr+UnDepthDelimiter;
+                        end;
+                        setlength(ADTSArray^[0],length(ADTSArray^[0])+1);
+                        setlength(ADTSArray^[1],length(ADTSArray^[0]));
+                        ADTSArray^[0][length(ADTSArray^[0])-1]:=TempStr;
+                        ADTSArray^[1][length(ADTSArray^[1])-1]:=AValue;
+                        //add to phandle table
+                        if depth>2 then
+                        begin
+                          if phandleArrayOkay AND (length(phandle)>0) then
+                          begin
+                            TempStr:='@';
+                            for B:=0 to length(AName)-2 do
+                            begin
+                              if B<>0 then TempStr:=TempStr+DepthDelimiter;
+                              TempStr:=TempStr+AName[B];
+                            end;
+                            for B:=1 to length(AName)-1 do
+                            begin
+                              TempStr:=TempStr+UnDepthDelimiter;
+                            end;
+                            AddNodeTophandleArray(tempstr,phandle);
+                          end;
+                        end;
+                        //clean up
+                        AValue:='';
+                        AName[depth-1]:='';
+                      end;
+                    end;
           end;
 
         end;
@@ -356,28 +402,33 @@ var
   FirstResult: boolean;
 begin
   result:='';
-  B:=0;
-  ValueIsText:=false;
-  FirstResult:=true;
-  for A:=1 to length(aString)-1 do
-  if NOT ValueIsText then
+  if length(aString)>0 then
   begin
-    if aString[A]='"' then
+    B:=0;
+    ValueIsText:=false;
+    FirstResult:=true;
+    for A:=1 to length(aString)-1 do
     begin
-      result:='';
-      ValueIsText:=true;
-    end;
-    if ((aString[A]='<') OR (aString[A]='[') OR (aString[A]=' ')) AND ValidChar(aString[A+1]) then
-    begin
-      inc(B);
-      if aString[A+1]='&' then
+      if NOT ValueIsText then
       begin
-        if FirstResult then
+        if aString[A]='"' then
         begin
-          result:=result+'<'+inttostr(B)+'>';
-          FirstResult:=false;
-        end
-        else result:=result+','+'<'+inttostr(B)+'>';
+          result:='';
+          ValueIsText:=true;
+        end;
+        if ((aString[A]='<') OR (aString[A]='[') OR (aString[A]=' ')) AND ValidChar(aString[A+1]) then
+        begin
+          inc(B);
+          if aString[A+1]='&' then
+          begin
+            if FirstResult then
+            begin
+              result:=result+'<'+inttostr(B)+'>';
+              FirstResult:=false;
+            end
+            else result:=result+','+'<'+inttostr(B)+'>';
+          end;
+        end;
       end;
     end;
   end;
