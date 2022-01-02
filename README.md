@@ -13,9 +13,9 @@ Multidtc is simply a wrapper for dtc which you need to install yourself.
 dtc will only decompile one dtb file at a time. Multidtc will decompile multiple files in one go.
 
 Assuming that you have some arm linux kernel already compiled (using something like 
-
+```
 make ARCH=arm64 CROSS_COMPILE=~/gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu- dtbs
-
+```
 )
 
 Let's say you are interested in a Rockchip device with an RK356x Soc:-
