@@ -40,7 +40,7 @@ Suppose that you have some new not well understood device that you ripped the dt
 ```
 Load the out.tsv file into a spreadsheet like Libreoffice setting all columns to text, and tab as the only delimiter.
 
-If you don't want to compare a new device and just want to compare all dts files in a folder then you can do that with
+If you don't want to compare a new device and just want to compare all decompiled dtb files in a folder then you can do that with
 ```
 ./dts2tsv -d dtbdump/*.dtb2s -o out.tsv
 ```
@@ -54,6 +54,8 @@ It uses these files only to identify values which are phandles instead of u32 va
 The reason for this is that decompiled dtb files (which are called dtb2s files here) are easy to compare, but, certain pieces of information get lost in compilation, for example which values in a node are variables (u32 vales) and which are phandles (so pointers to other variables).
 This makes direct comparison of decompiled dtb files slightly hit and miss.
 The information concerning which values are variables and which are phandles is present in original source files, and dts2tsv is able to use this information to ascertain which fields in a related decompiled dtb file are which.
+
+Note that loading dts or dtsi files with overlapping or contradictory nodenames with associated phandles is not tested.  It is probably best to only load dts and dtsi files which relate to hardware which is as similar as possible to the device of interest.
 
 2. It uses the -d switch to load decompiled dtb files.
 Each file is scanned for node and subnode names that match ones in dts and dtsi files which are known to be phandles.
