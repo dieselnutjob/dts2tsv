@@ -46,13 +46,49 @@ var
   ax,ay: longword;
   DTSArray: TDTSArray; //temp array for processing a single DTS file
   PValuesArray :TDTSArray; //array of index of values that are pHandles (instead of u32)
+  LabelArray: TDTSArray;
   ACommandSwitch: TCommandSwitch;
+
+Procedure AddLabelToLabelArray(ALabel,ANodeName: AnsiString);
+var
+  A: longint;
+  NotFound: boolean;
+begin
+  //ignore 1:1 mappings for now (not sure about this)
+  if comparestr(ALabel,ANodeName)<>0 then
+  begin
+    if length(LabelArray[0])=0 then
+    begin
+      setlength(LabelArray,2,1);
+      LabelArray[0][0]:=ALabel;
+      LabelArray[1][0]:=ANodename;
+    end
+    else
+    begin
+      A:=0;
+      NotFound:=true;
+      while NotFound AND (A<length(LabelArray[1]))do
+      begin
+        if comparestr(ANodeName,LabelArray[1][A])=0 then NotFound:=false;
+        inc(A);
+      end;
+      if NotFound then
+      begin
+        setlength(LabelArray,2,A+1);
+        LabelArray[0][A]:=ALabel;
+        LabelArray[1][A]:=ANodename;
+      end;
+    end;
+  end;
+end;
 
 Function DeLabel(AString: AnsiString):AnsiString;
 var
   A,B: word;
+  ALabel: ansistring;
 begin
   Result:='';
+  ALabel:='';
   if length(AString)>0 then
   begin
     A:=length(AString)+1;
@@ -61,6 +97,12 @@ begin
     until (AString[A]=':') OR (A=1);
     for B:=A to length(AString) do
       if AString[B]<>':' then Result:=Result+AString[B];
+    //dump out labels for later nodename to label substitution
+    if (AString[A]=':') AND (A>1) then
+    begin
+      for B:=1 to A-1 do ALabel:=ALabel+AString[B];
+      AddLabelToLabelArray(ALabel,Result);
+    end;
   end;
 end;
 
@@ -68,7 +110,6 @@ Procedure AddNodeTophandleArray(AName, Aphandle: shortstring);
 var
   L: longword;
 begin
-  //if debug then writeln('AddNodeTophandleArray:'+AName+':'+Aphandle);
   if length(phandleArray)=0 then
   begin
     setlength(phandleArray,1);
@@ -127,7 +168,6 @@ begin
     on E:Exception do
       writeln('File '+InputFile+' could not be read because: ', E.Message);
   end;
-  //if debug then writeln(InputFile+':'+Inttostr(AMS.Size));
   if AMS.Size>0 then
   begin;
     Depth:=1;
@@ -144,7 +184,6 @@ begin
     while AMS.Position < AMS.Size do
     begin
       A:=AMS.ReadByte; //also increments AMS.Position
-      //if debug then writeln('AMS.Char='+chr(A));
       case AMode of
         Name:  begin
           case A of
@@ -178,7 +217,6 @@ begin
                     end;
             // }  end of node, start a new one
             125   : begin
-                      //if debug then writeln('#181 depth='+inttostr(depth));
                       AName[depth-1]:='';
                       dec(depth);
                       setlength(AName,depth);
@@ -188,8 +226,6 @@ begin
                         phandle:='';
                         ValueIsphandle:=false;
                       end;
-                      //if debug then writeln('#191');
-
                     end;
             // /
             47    : begin
@@ -302,7 +338,6 @@ begin
                           begin
                             TempStr:=TempStr+UnDepthDelimiter;
                           end;
-                          //if debug then writeln('#301:'+Tempstr);
                           AddNodeTophandleArray(tempstr,phandle);
                         end;
                       end;
@@ -358,7 +393,6 @@ begin
   end;
 
   AMS.Free;
-  //if debug then writeln('ended DTSFile2Array');
 end;
 
 Function OutPutFileOkay(aFile:ansistring):boolean;
@@ -486,7 +520,6 @@ var
   A,B: word;
   TempStr: ansistring;
 begin
-  //if debug then writeln(aValue+':'+bvalue);
   Result:='';
   setlength(valuelist,0);
   //setlength(valueend,0);
@@ -531,7 +564,6 @@ begin
               begin
                 valuelist[A].replace:=true;
                 valuelist[A].newtext:=pHandleArray[B].name;
-                //if debug then writeln('phandle '+Tempstr+' can be replaced with '+valuelist[A].newtext);
               end;
             end;
           end;
@@ -561,8 +593,10 @@ end;
 Procedure ProcessDTBSFile(aFile: ansistring; FileNumber: LongInt);
 var
   ADTSArray: PDTSArray;
-  A,B,C: longword;
+  A,B,C,D,E: longword;
   PValueMatchFound: boolean;
+  LabelSearch: ansistring;
+  TempStr: ansistring;
 begin
   setlength(DTSArray,0,0);
   //new DTSArray starts here, per input file
@@ -603,9 +637,73 @@ begin
                     PValueMatchFound:=true;
                     if length(DTSArray[1][A])>0 then
                     begin
-                      //if debug then writeln(DTSArray[0][A]+' : '+DTSArray[1][A]+' : '+PValuesArray[1][B]);
                       if DTSArray[1][A][1]='<' then DTSArray[1][A]:=Value2pHandle(DTSArray[1][A],PValuesArray[1][B]);
                       //writeln(DTSArray[1][A]);
+                    end;
+                  end;
+                end;
+              end;
+              //look in labelarray
+              if NOT PValueMatchFound then
+              begin
+                if length(labelarray[0])>0 then
+                begin
+                  for B:=0 to length(labelarray[0])-1 do
+                  begin
+                    if ANSIcontainsstr(DTSArray[0][A],LabelArray[1][B]) then
+                    //writeln(DTSArray[0][A]+' contains '+LabelArray[1][B]+' maps to '+LabelArray[0][B]);
+                    begin
+                      E:=0;
+                      LabelSearch:='';
+                      for C:=length(DTSArray[0][A]) downto 1 do
+                      begin
+                        if E=0 then
+                        begin
+                          LabelSearch:='';
+                          for D:=C to length(DTSArray[0][A]) do
+                          begin
+                            LabelSearch:=LabelSearch+DTSArray[0][A][D];
+                          end;
+                          if ANSIcontainsstr(LabelSearch,LabelArray[1][B]) then
+                          begin
+                            E:=C; //index in DTSArray[0][A] where LabelArray entry starts
+                          end;
+                        end;
+                      end;
+                      if E>0 then
+                      begin
+                        E:=E+length(LabelArray[1][B]); //index in DTSArray[0][A] where first char after LabelArray entry
+                        LabelSearch:='&'+LabelArray[0][B]; //switch nodename for label
+                        if E<=length(DTSArray[0][A]) then
+                        begin
+                          for C:=E to length(DTSArray[0][A]) do
+                            LabelSearch:=LabelSearch+DTSArray[0][A][C];
+
+                          for C:=0 to length(PValuesArray[0])-1 do
+                          begin
+                            if NOT PValueMatchFound then
+                            begin
+                              //if comparestr(LabelSearch,PValuesArray[0][C])=0 then  //doesn't work because extra }} on end
+                              if ansicontainsstr(LabelSearch,PValuesArray[0][C]) then
+                              begin
+                                LabelSearch:=copy(LabelSearch,1,length(PValuesArray[0][C]));
+                                if comparestr(LabelSearch,PValuesArray[0][C])=0 then
+
+                                begin
+                                  PValueMatchFound:=true;
+                                  if length(DTSArray[1][A])>0 then
+                                  begin
+                                    if DTSArray[1][A][1]='<' then DTSArray[1][A]:=Value2pHandle(DTSArray[1][A],PValuesArray[1][C]);
+
+                                  end;
+                                end;
+
+                              end;
+                            end;
+                          end;
+                        end
+                        else writeln('oops');
+                      end;
                     end;
                   end;
                 end;
@@ -686,6 +784,7 @@ begin
     setlength(SourceFiles,0);
     setlength(DecompFiles,0);
     setlength(PValuesArray,2,0);
+    setlength(LabelArray,2,0);
     OutputFile:='';
     ACommandSwitch:=none;
     for count:=1 to ParamCount do
