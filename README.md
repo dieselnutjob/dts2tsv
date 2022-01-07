@@ -54,6 +54,7 @@ It uses these files only to identify values which are phandles instead of u32 va
 The reason for this is that decompiled dtb files (which are called dtb2s files here) are easy to compare, but, certain pieces of information get lost in compilation, for example which values in a node are variables (u32 vales) and which are phandles (so pointers to other variables).
 This makes direct comparison of decompiled dtb files slightly hit and miss.
 The information concerning which values are variables and which are phandles is present in original source files, and dts2tsv is able to use this information to ascertain which fields in a related decompiled dtb file are which.
+From version 3 the program converts nodenames to labels if the label and nodename are different, and then searches for phandles associated with those labels as well.
 
 Note that loading dts or dtsi files with overlapping or contradictory nodenames with associated phandles is not tested.  It is probably best to only load dts and dtsi files which relate to hardware which is as similar as possible to the device of interest.
 
