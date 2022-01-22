@@ -20,11 +20,11 @@ make ARCH=arm64 CROSS_COMPILE=~/gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-g
 
 Let's say you are interested in a Rockchip device with an RK356x Soc:-
 
+```
 mkdir dtbdump
 
 cp arch/arm64/boot/dts/rockchip/*.dtb dtbdump/.
 
-```
 ./multidtc dtbdump/rk356*.dtb
 ```
 
