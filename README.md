@@ -34,7 +34,7 @@ Suppose that you have some new not well understood device that you ripped the dt
 
 Firstly you need to identify another device which is similar and for which source code files (dts, dtsi and includes) are available.
 
-Create a folder and put the device dts and all of the dsti and h files into that folder. 
+Create a folder and put the device dts and all of the dsti and h files into that folder (source in the example below):- 
 
 ```
 ./multidtc rk3566-newdevice.dtb
